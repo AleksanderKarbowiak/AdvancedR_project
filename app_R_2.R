@@ -1,3 +1,4 @@
+#test
 library(leaflet)
 library(shiny)
 library(shinyjs)
@@ -31,7 +32,6 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  options(shiny.maxRequestSize=3000*1024^2)
   
   data <- reactive({
     req(input$file1)
@@ -43,6 +43,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "x", choices = colnames(data()))
     updateSelectInput(session, "y", choices = colnames(data()))
   })
+  
 
   output$myMap <- renderLeaflet({
     data <- reactive({ 
