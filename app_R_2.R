@@ -6,39 +6,50 @@ library(ggplot2)
 library(readr)
 library(shinythemes)
 
-ui <- fluidPage(
-  leafletOutput('myMap', width = "100%", height="100vh"),
-  useShinyjs(),
-  theme = shinytheme("sandstone"),
-  div(
-    style = "position: absolute; top: 5px; right: 40px;",
-    width = "300px",
-    
-    fluidRow(
-      fileInput("file1", "Choose CSV File", accept = ".csv"),
-      checkboxInput("header", "Header", TRUE)
-    ),
-    
-    radioButtons("disp", "Display",
-                 choices = c("First 100 rows" = "100_rows",
-                             "First 1000 rows" = "1000_rows",
-                             "All" = "all"),
-                 selected = "100_rows"),
-    
-    fluidRow(
-      selectInput("x", "X", choices = NULL),
-      selectInput("y", "Y", choices = NULL)
-    ),
-    
-    fluidRow(
-      tableOutput("output"),
-      plotOutput("scatterPlot", width = "100%", height = "200px")
-    ),
-    
-    actionButton("help_window", "HELP")
-  )
-)
+ui <- navbarPage("Interactive Map",
+    tabPanel("Map",
+     div(class="outer", 
+         
+         tags$head(
+           includeCSS("styles.css")
+         ),
+      fluidPage(
+      leafletOutput('myMap', width = "100%", height="100vh"),
+      useShinyjs(),
+      theme = shinytheme("sandstone"),
+      absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+                    draggable = TRUE, top = 80, left = "auto", right = 20, bottom = "auto",
+                    width = 330, height = "auto",
+        
+        fluidRow(
+          fileInput("file1", "Choose CSV File", accept = ".csv"),
+          checkboxInput("header", "Header", TRUE)
+        ),
+        
+        radioButtons("disp", "Display",
+                     choices = c("First 100 rows" = "100_rows",
+                                 "First 1000 rows" = "1000_rows",
+                                 "All" = "all"),
+                     selected = "100_rows"),
+        
+        fluidRow(
+          selectInput("x", "X", choices = NULL),
+          selectInput("y", "Y", choices = NULL)
+        ),
+        
+        fluidRow(
+          tableOutput("output"),
+          plotOutput("scatterPlot", width = "100%", height = "200px")
+        ),
+        
+        actionButton("help_window", "HELP")
+      )
+    )
+  )),
+  
+  tabPanel("Dataset")
 
+)
 
 server <- function(input, output, session) {
   
