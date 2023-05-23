@@ -7,7 +7,7 @@ library(readr)
 library(shinythemes)
 
 ui <- navbarPage("Interactive Map",
-    tabPanel("Map",
+    tabPanel("Map", 
      div(class="outer", 
          
          tags$head(
@@ -89,10 +89,14 @@ server <- function(input, output, session) {
       })
     
     
-    map <- leaflet() %>% 
-      addTiles() %>% 
-      addCircles(data = data(), radius = 10, color = 'darkred') %>%
-      setView(lng = -86.00, lat = 34.0000, zoom = 4)
+    map <- leaflet(data()) %>% 
+      addTiles() %>%  
+      addCircleMarkers(lat =  ~LAT, lng = ~LON, 
+                       color = 'darkred',
+                       radius = 5, 
+                       popup = "Example",
+                       stroke = FALSE, fillOpacity = 0.8
+                       )
     
     map
   })
@@ -126,15 +130,6 @@ server <- function(input, output, session) {
 
     read.csv(file$datapath, header = input$header)
     
-    if(input$disp == "100_rows") {
-      return(file[1:100,])
-    }
-    else if(input$disp == "1000_rows"){
-      return(file[1:1000,])
-    }
-    else {
-      return(file)
-    }
   })
 }
 
