@@ -5,8 +5,12 @@ library(readxl)
 library(ggplot2)
 library(readr)
 library(shinythemes)
+library(DT)
 
 ui <- navbarPage("Interactive Map",
+                 
+## Map subpage ##
+    
     tabPanel("Map", 
      div(class="outer", 
          
@@ -47,7 +51,13 @@ ui <- navbarPage("Interactive Map",
     )
   )),
   
-  tabPanel("Dataset")
+
+## Dataset subpage ##
+  
+  tabPanel("Dataset",
+           fluidPage(mainPanel(width = 12,
+                               DT::dataTableOutput("contents")))
+           )
 
 )
 
@@ -97,7 +107,6 @@ server <- function(input, output, session) {
                        popup = "Example",
                        stroke = FALSE, fillOpacity = 0.8
                        )
-    
     map
   })
   
@@ -121,14 +130,24 @@ server <- function(input, output, session) {
     shinyjs::runjs("var helpWindow = window.open('data:text/html,<html><body><h1>Hi, please remember that your dataset must contain these variables: ID, State, CrimeType and NumerOfCrimes.</h1><h2>Have fun :)</h2></body></html>', 'Help', 'dependent=TRUE,resizable=TRUE');helpWindow.document.title = 'Help';")
   })
 
-  output$contents <- renderTable({
-    file <- input$file1
-    ext <- tools::file_ext(file$datapath)
-
-    req(file)
-    validate(need(ext == "csv", "Please upload a csv file"))
-
-    read.csv(file$datapath, header = input$header)
+  
+## Interactive table showing same rows as on the map ##
+  
+  output$contents <- DT::renderDataTable({
+    
+    data <- data()
+    
+    DT::datatable(data)
+    
+    if(input$disp == "100_rows") {
+      return(data[1:100,])
+    }
+    else if(input$disp == "1000_rows"){
+      return(data[1:1000,])
+    }
+    else {
+      return(data)
+    }
     
   })
 }
