@@ -17,6 +17,7 @@ ui <- navbarPage("Interactive Map",
          tags$head(
            includeCSS("styles.css")
          ),
+         
       fluidPage(
       leafletOutput('myMap', width = "100%", height="100vh"),
       useShinyjs(),
@@ -35,6 +36,11 @@ ui <- navbarPage("Interactive Map",
                                  "First 1000 rows" = "1000_rows",
                                  "All" = "all"),
                      selected = "100_rows"),
+        
+        fluidRow( 
+          selectInput("popup_1", "Additional information displayed on the map", 
+                      choices = NULL)
+        ),
         
         fluidRow(
           selectInput("x", "X", choices = NULL),
@@ -73,6 +79,7 @@ server <- function(input, output, session) {
     req(data())
     updateSelectInput(session, "x", choices = colnames(data()))
     updateSelectInput(session, "y", choices = colnames(data()))
+    updateSelectInput(session, "popup_1", choices = colnames(data()))
   })
   
 
@@ -84,7 +91,6 @@ server <- function(input, output, session) {
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
       data <- na.omit(data[c("LAT", "LON")])
-      data.frame(Lat =as.numeric(data$LAT), Lon =as.numeric(data$LON))
       
       if(input$disp == "100_rows") {
         return(data[1:100,])
@@ -98,13 +104,13 @@ server <- function(input, output, session) {
       
       })
     
-    
+
     map <- leaflet(data()) %>% 
       addTiles() %>%  
       addCircleMarkers(lat =  ~LAT, lng = ~LON, 
                        color = 'darkred',
                        radius = 5, 
-                       popup = "Example",
+                       popup = paste0("Var1: ", as.character(data()[[input$popup_1]]),"<br>"),
                        stroke = FALSE, fillOpacity = 0.8
                        )
     map
