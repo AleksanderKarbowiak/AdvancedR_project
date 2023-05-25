@@ -117,12 +117,12 @@ server <- function(input, output, session) {
   })
   
   output$scatterPlot <- renderPlot({
-    req(input$file1)
+    req(input$file1,input$x,input$y)
     data <- data()
     colnames(data) <- gsub(";", "", colnames(data))
     
     ggplot(data, aes(x=data[, input$x], y=data[, input$y])) +
-    geom_point() +
+    geom_point(na.rm=TRUE) +
     labs(title=paste(input$x, "vs", input$y),
          x=input$x, y = input$y) +
     theme(plot.background = element_rect(fill='transparent', color=NA),
