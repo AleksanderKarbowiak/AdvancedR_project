@@ -6,6 +6,7 @@ library(ggplot2)
 library(readr)
 library(shinythemes)
 library(DT)
+library(dplyr)
 
 ui <- navbarPage("Interactive Map",
                  
@@ -37,14 +38,20 @@ ui <- navbarPage("Interactive Map",
                                  "All" = "all"),
                      selected = "100_rows"),
         
+        h5(strong("Additional information displayed on the map")),
+        
         fluidRow( 
-          selectInput("popup_1", "Additional information displayed on the map", 
-                      choices = NULL)
+          column(6, selectInput("popup_1", label=NULL,
+                                choices = NULL)), 
+          column(6, selectInput("popup_2",label=NULL,
+                      choices = NULL))
         ),
         
+        p(strong("Plot")),
+        
         fluidRow(
-          selectInput("x", "X", choices = NULL),
-          selectInput("y", "Y", choices = NULL)
+          column(6, selectInput("x", "X", choices = NULL)),
+          column(6, selectInput("y", "Y", choices = NULL))
         ),
         
         fluidRow(
@@ -80,6 +87,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "x", choices = colnames(data()))
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(data()))
+    updateSelectInput(session, "popup_2", choices = colnames(data()))
   })
   
 
@@ -110,7 +118,8 @@ server <- function(input, output, session) {
       addCircleMarkers(lat =  ~LAT, lng = ~LON, 
                        color = 'darkred',
                        radius = 5, 
-                       popup = paste0("Var1: ", as.character(data()[[input$popup_1]]),"<br>"),
+                       popup = paste0(strong(paste0(input$popup_1,": " )), data()[[input$popup_1]],"<br>",
+                                      strong(paste0(input$popup_2,": " )), data()[[input$popup_2]]),
                        stroke = FALSE, fillOpacity = 0.8
                        )
     map
