@@ -149,21 +149,11 @@ server <- function(input, output, session) {
   
 ## Interactive table showing same rows as on the map ##
   
-  output$contents <- DT::renderDataTable({
+  output$contents <- DT::renderDataTable(
+    data <- data(),
+    options=list(lengthMenu=list("10","50","100","1000","10000","ALL"),pageLength=50)
     
-    data <- data()
-    
-    DT::datatable(data)
-    
-    if(input$disp == "100_rows") {
-      return(data[1:100,])
-    }
-    else if(input$disp == "1000_rows"){
-      return(data[1:1000,])
-    }
-    else {
-      return(data)
-    }
+    #showDT::datatable(data)
     
   })
 }
