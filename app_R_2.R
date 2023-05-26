@@ -6,6 +6,7 @@ library(ggplot2)
 library(readr)
 library(shinythemes)
 library(DT)
+library(tidyr)
 library(dplyr)
 
 ui <- navbarPage("Interactive Map",
@@ -93,12 +94,12 @@ server <- function(input, output, session) {
 
   output$myMap <- renderLeaflet({
     data <- reactive({ 
+      
       req(input$file1)
-      data<-read.csv(input$file1$datapath, header =  input$header)
-      colnames(data) <- gsub(";", "", colnames(data))
-      data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
-      data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
-      data <- na.omit(data[c("LAT", "LON")])
+      
+      data <- read.csv(input$file1$datapath, header =  input$header, sep = ",", dec = ".") %>% 
+        mutate_at(c('LAT', 'LON'), as.numeric) %>% 
+        drop_na()
       
       if(input$disp == "100_rows") {
         return(data[1:100,])
