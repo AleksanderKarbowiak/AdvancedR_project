@@ -9,6 +9,7 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
+library(iskanalytics)
 
 ui <- navbarPage("Interactive Map",
                  
@@ -195,7 +196,7 @@ server <- function(input, output, session) {
   
   output$contents <- DT::renderDataTable(
     data <- data() %>% drop_na(last_col()),
-    options=list(lengthMenu=list("10","50","100","1000","10000","ALL"),pageLength=50)
+    options=list(lengthMenu=list("10","50","100","1000"),pageLength=50)
     
     #showDT::datatable(data)
     
