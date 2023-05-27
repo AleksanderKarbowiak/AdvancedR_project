@@ -95,8 +95,8 @@ ui <- navbarPage("Interactive Map",
                                            h3("Table"),
                                            radioButtons("table_type", label = "Table Type", 
                                                         choices = list("Basic Statistics" = "summary_table", 
-                                                                       "Unique Values" = "unique_values_table",
-                                                                       "Levels and Frequency" = "lvl_freq"),
+                                                                       "Number of unique values of each column" = "unique_values_table",
+                                                                       "Levels and Frequency of Categorical Values" = "lvl_freq"),
                                                         
                                                         selected = "summary_table"),
                                            
@@ -207,7 +207,8 @@ server <- function(input, output, session) {
   observeEvent(input$create_table,{
     output$table_summ <- renderTable({
       req(input$numeric_var,input$categorical_var)
-      df_input <- data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
+      df_to_cleanNull <- data() %>% drop_na(last_col())
+      df_input <- data.frame(df_to_cleanNull[[input$numeric_var]],df_to_cleanNull[[input$categorical_var]]) 
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
       if("summary_table" %in% input$table_type){
@@ -220,10 +221,10 @@ server <- function(input, output, session) {
           ) %>% 
           rename(!!input$categorical_var := "categorical_var") }
       else if ("unique_values_table" %in% input$table_type) {
-        getUniqueNumValues(data())
+        getUniqueNumValues(df_to_cleanNull)
       }
-      else if ("lvl_frq" %in% input$table_type) {
-        getVarLevels(df_input,input$categorical_var)
+      else if ("lvl_freq" %in% input$table_type) {
+        getVarLevels(df_to_cleanNull,input$categorical_var)
       }
       
     })
@@ -232,12 +233,12 @@ server <- function(input, output, session) {
   observeEvent(input$create_plot,{
     output$plot <- renderPlot({
       req(input$numeric_var,input$categorical_var)
-      df_input <- data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
+      df_to_cleanNull <- data() %>% drop_na(last_col())
+      df_input <- data.frame(df_to_cleanNull[[input$numeric_var]],df_to_cleanNull[[input$categorical_var]])
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
-      if("histogram" %in% input$table_type){
-        ggplot(df_input, aes(x=categorical_var)) +
-          geom_histogram(na.rm=TRUE)  }
+      if("histogram" %in% input$plot_types){
+        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))}
       
     })
   })

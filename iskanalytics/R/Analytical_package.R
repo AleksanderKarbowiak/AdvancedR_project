@@ -49,13 +49,16 @@ getUniqueNumValues <- function(dataset){
     # number of levels in the end
     sort()
   
-  return(uniqueValues)
+  #Convert Named Vector to Dataframe
+  df <- data.frame(as.list(uniqueValues))
+  
+  return(df)
 }
 
 #returns levels and frequency of variable in dataset
 getVarLevels <- function(dataset, varName){
   if(is.character(varName) & varName %in% names(dataset)){
-    return(table(dataset[[varName]]))
+    return(as.data.frame(table(dataset[[varName]])))
   }
   else{
     stop("The dataset does not contain that variable")
