@@ -142,9 +142,10 @@ server <- function(input, output, session) {
       
       req(input$file1)
       
-      data <- read.csv(input$file1$datapath, header =  input$header, sep = ",", dec = ".") %>% 
-        mutate_at(c('LAT', 'LON'), as.numeric) %>% 
-        drop_na()
+      data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
+      colnames(data) <- gsub(";", "", colnames(data))
+      data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
+      data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
       
       if(input$disp == "100_rows") {
         return(data[1:100,])
