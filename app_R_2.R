@@ -86,13 +86,19 @@ ui <- navbarPage("Interactive Map",
                   fluidRow(
                     
                       h3("Table"),
-                    
-                      selectInput("numeric_var", label="Numeric Variable:", choices = NULL),
-                      selectInput("categorical_var", label="Categorical Variable:", choices = NULL),
                       
-                      checkboxGroupInput("statistics", label = "Statistics", 
-                                         choices = list("Mean" = "mean", "Median" = "median", "Count NA Values" = "countNaValues"),
-                                         selected = c("mean", "median")),
+                      radioButtons("table_type", label = "Table Type", 
+                                   choices = list("Basic Statistics" = "summary_table", 
+                                                  "Unique Values" = "unique_values_table",
+                                                  "Levels and Frequency" = "lvl_freq"),
+        
+                                   selected = "summary_table"),
+                      
+                      h5(strong("Variables:")),
+                      
+                      fluidRow(
+                      column(6,selectInput("numeric_var", label=h6("Numeric:"), choices = NULL)),
+                      column(6,selectInput("categorical_var", label=h6("Categorical:"), choices = NULL))),
                       
                       actionButton("create_table", label = "Create Table"),
                       
@@ -126,8 +132,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(data()))
     updateSelectInput(session, "popup_2", choices = colnames(data()))
-    updateSelectInput(session, "numeric_var", choices = colnames(data()))
-    updateSelectInput(session, "categorical_var", choices = colnames(data()))
+    updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
+    updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
 
@@ -203,10 +209,21 @@ server <- function(input, output, session) {
     df_input <- data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
     colnames(df_input) <- c("numeric_var", "categorical_var")
     
+    if("summary_table" %in% input$table_type){
     df_input %>% group_by(categorical_var) %>% 
-      summarise (
-      mean = mean(numeric_var)
-       )
+        summarise(
+        !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
+        !!paste0("Median ", input$numeric_var) := median(numeric_var),
+        !!paste0("Mode ", input$numeric_var) := getmode(numeric_var),
+        !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
+       ) %>% 
+      rename(!!input$categorical_var := "categorical_var") }
+    else if ("unique_values_table" %in% input$table_type) {
+      getUniqueNumValues(data())
+    }
+    else if ("lvl_frq" %in% input$table_type) {
+      getVarLevels(df_input,input$categorical_var)
+    }
     
   } )
   
