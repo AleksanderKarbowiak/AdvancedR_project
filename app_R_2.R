@@ -71,9 +71,45 @@ ui <- navbarPage("Interactive Map",
   tabPanel("Dataset",
            fluidPage(mainPanel(width = 12,
                                DT::dataTableOutput("contents")))
-           )
+           ),
+
+## Subpage with more details ##
+
+  tabPanel("Details",
+         fluidPage(
+           
+           mainPanel(width=8,tableOutput('table_summ')),
+             
+           sidebarPanel(width = 4,
+                  
+                  fluidRow(
+                    
+                      h3("Table"),
+                    
+                      selectInput("numeric_var", label="Numeric Variable:", choices = NULL),
+                      selectInput("categorical_var", label="Categorical Variable:", choices = NULL),
+                      
+                      checkboxGroupInput("statistics", label = "Statistics", 
+                                         choices = list("Mean" = "mean", "Median" = "median", "Count NA Values" = "countNaValues"),
+                                         selected = c("mean", "median")),
+                      
+                      actionButton("create_table", label = "Create Table"),
+                      
+                      h3("Plot"),
+                      
+                      radioButtons("plot_types", label = "Plot Type", 
+                                         choices = list("Box Plot" = "boxplot", "Histogram" = "histogram", "Scatter Plot" = "scatter_plot"),
+                                         selected = "histogram"),
+                      
+                      actionButton("create_plot", label = "Create Plot"),
+                      
+                    ))
+          )
+        )
 
 )
+
+
 
 server <- function(input, output, session) {
   
@@ -89,6 +125,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(data()))
     updateSelectInput(session, "popup_2", choices = colnames(data()))
+    updateSelectInput(session, "numeric_var", choices = colnames(data()))
+    updateSelectInput(session, "categorical_var", choices = colnames(data()))
   })
   
 
@@ -155,7 +193,14 @@ server <- function(input, output, session) {
     
     #showDT::datatable(data)
     
-  })
+  )
+  
+## Table with statistics 
+  
+  output$table_summ <- renderTable(
+    data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
+    )
+  
 }
 
 shinyApp(ui, server)
