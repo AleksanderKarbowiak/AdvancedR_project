@@ -101,7 +101,7 @@ ui <- navbarPage("Interactive Map",
                                          choices = list("Box Plot" = "boxplot", "Histogram" = "histogram", "Scatter Plot" = "scatter_plot"),
                                          selected = "histogram"),
                       
-                      actionButton("create_plot", label = "Create Plot"),
+                      actionButton("create_plot", label = "Create Plot")
                       
                     ))
           )
@@ -197,9 +197,17 @@ server <- function(input, output, session) {
   
 ## Table with statistics 
   
-  output$table_summ <- renderTable(
-    data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
-    )
+  output$table_summ <- renderTable({
+    req(input$numeric_var,input$categorical_var)
+    df_input <- data.frame(data()[[input$numeric_var]],data()[[input$categorical_var]])
+    colnames(df_input) <- c("numeric_var", "categorical_var")
+    
+    df_input %>% group_by(categorical_var) %>% 
+      summarise (
+      mean = mean(numeric_var)
+       )
+    
+  } )
   
 }
 
