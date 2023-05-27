@@ -12,6 +12,7 @@ library(tidyverse)
 
 ui <- navbarPage("Interactive Map",
                  
+<<<<<<< HEAD
                  ## Map subpage ##
                  
                  tabPanel("Map", 
@@ -112,6 +113,108 @@ ui <- navbarPage("Interactive Map",
                           )
                  )
                  
+=======
+## Map subpage ##
+    
+    tabPanel("Map", 
+     div(class="outer", 
+         
+         tags$head(
+           includeCSS("styles.css")
+         ),
+         
+      fluidPage(
+      leafletOutput('myMap', width = "100%", height="100vh"),
+      useShinyjs(),
+      theme = shinytheme("sandstone"),
+      absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+                    draggable = TRUE, top = 80, left = "auto", right = 20, bottom = "auto",
+                    width = 330, height = "auto",
+        
+        fluidRow(
+          fileInput("file1", "Choose CSV File", accept = ".csv"),
+          checkboxInput("header", "Header", TRUE)
+        ),
+        
+        radioButtons("disp", "Display",
+                     choices = c("First 100 rows" = "100_rows",
+                                 "First 1000 rows" = "1000_rows",
+                                 "All" = "all"),
+                     selected = "100_rows"),
+        
+        h5(strong("Additional information displayed on the map")),
+        
+        fluidRow( 
+          column(6, selectInput("popup_1", label=NULL,
+                                choices = NULL)), 
+          column(6, selectInput("popup_2",label=NULL,
+                      choices = NULL))
+        ),
+        
+        p(strong("Plot")),
+        
+        fluidRow(
+          column(6, selectInput("x", "X", choices = NULL)),
+          column(6, selectInput("y", "Y", choices = NULL))
+        ),
+        
+        fluidRow(
+          plotOutput("scatterPlot", width = "100%", height = "200px")
+        ),
+        
+        actionButton("help_window", "HELP")
+      )
+    )
+  )),
+  
+
+## Dataset subpage ##
+  
+  tabPanel("Dataset",
+           fluidPage(mainPanel(width = 12,
+                               DT::dataTableOutput("contents")))
+           ),
+
+## Subpage with more details ##
+
+  tabPanel("Details",
+         fluidPage(
+           
+           mainPanel(width=8,
+                     fluidRow(tableOutput('table_summ'),
+                              plotOutput('plot'))),
+             
+           sidebarPanel(width = 4,
+                  
+                  fluidRow(
+                    
+                      h5(strong("Variables:")),
+                      fluidRow(
+                        column(6,selectInput("numeric_var", label=h6("Numeric:"), choices = NULL)),
+                        column(6,selectInput("categorical_var", label=h6("Categorical:"), choices = NULL))),
+                     
+                      h3("Table"),
+                      radioButtons("table_type", label = "Table Type", 
+                                   choices = list("Basic Statistics" = "summary_table", 
+                                                  "Unique Values" = "unique_values_table",
+                                                  "Levels and Frequency" = "lvl_freq"),
+        
+                                   selected = "summary_table"),
+                    
+                      actionButton("create_table", label = "Create Table"),
+                      
+                      h3("Plot"),
+                      radioButtons("plot_types", label = "Plot Type", 
+                                         choices = list("Box Plot" = "boxplot", "Histogram" = "histogram", "Scatter Plot" = "scatter_plot"),
+                                         selected = "histogram"),
+                      
+                      actionButton("create_plot", label = "Create Plot")
+                      
+                    ))
+          )
+        )
+
+>>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
 )
 
 
@@ -176,12 +279,21 @@ server <- function(input, output, session) {
     colnames(data) <- gsub(";", "", colnames(data))
     
     ggplot(data, aes(x=data[, input$x], y=data[, input$y])) +
+<<<<<<< HEAD
       geom_point(na.rm=TRUE) +
       labs(title=paste(input$x, "vs", input$y),
            x=input$x, y = input$y) +
       theme(plot.background = element_rect(fill='transparent', color=NA),
             text=element_text(face = "bold"))
     
+=======
+    geom_point(na.rm=TRUE) +
+    labs(title=paste(input$x, "vs", input$y),
+         x=input$x, y = input$y) +
+    theme(plot.background = element_rect(fill='transparent', color=NA),
+          text=element_text(face = "bold"))
+
+>>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
   },bg="transparent")
   
   
@@ -191,8 +303,11 @@ server <- function(input, output, session) {
   })
   
   
+<<<<<<< HEAD
   ## Interactive table showing same rows as on the map ##
   
+=======
+>>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
   output$contents <- DT::renderDataTable(
     data <- data() %>% drop_na(last_col()),
     options=list(lengthMenu=list("10","50","100","1000","10000","ALL"),pageLength=50)
@@ -201,7 +316,11 @@ server <- function(input, output, session) {
     
   )
   
+<<<<<<< HEAD
   ## Table with statistics 
+=======
+## Table with statistics 
+>>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
   
   observeEvent(input$create_table,{
     output$table_summ <- renderTable({
@@ -210,6 +329,7 @@ server <- function(input, output, session) {
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
       if("summary_table" %in% input$table_type){
+<<<<<<< HEAD
         df_input %>% group_by(categorical_var) %>% 
           summarise(
             !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
@@ -218,6 +338,16 @@ server <- function(input, output, session) {
             !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
           ) %>% 
           rename(!!input$categorical_var := "categorical_var") }
+=======
+      df_input %>% group_by(categorical_var) %>% 
+          summarise(
+          !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
+          !!paste0("Median ", input$numeric_var) := median(numeric_var),
+          !!paste0("Mode ", input$numeric_var) := getmode(numeric_var),
+          !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
+         ) %>% 
+        rename(!!input$categorical_var := "categorical_var") }
+>>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
       else if ("unique_values_table" %in% input$table_type) {
         getUniqueNumValues(data())
       }
