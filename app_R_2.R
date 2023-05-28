@@ -9,10 +9,14 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
+library(sf)
+library(leaflet.extras)
+library(htmlwidgets)
+#library(iskanalytics)
+
 
 ui <- navbarPage("Interactive Map",
                  
-<<<<<<< HEAD
                  ## Map subpage ##
                  
                  tabPanel("Map", 
@@ -41,7 +45,8 @@ ui <- navbarPage("Interactive Map",
                                                                        "All" = "all"),
                                                            selected = "100_rows"),
                                               
-                                              h5(strong("Additional information displayed on the map")),
+                                              h5(strong("Additional information displayed on the map (point)")),
+                                              
                                               
                                               fluidRow( 
                                                 column(6, selectInput("popup_1", label=NULL,
@@ -50,16 +55,19 @@ ui <- navbarPage("Interactive Map",
                                                                       choices = NULL))
                                               ),
                                               
-                                              p(strong("Plot")),
+                                              p(strong("Additional information displayed on the map (state)")),
+                                              
                                               
                                               fluidRow(
-                                                column(6, selectInput("x", "X", choices = NULL)),
-                                                column(6, selectInput("y", "Y", choices = NULL))
+                                                column(6, selectInput("popup_3", label = NULL,
+                                                                      choices = NULL)), 
                                               ),
                                               
+                                              
                                               fluidRow(
-                                                plotOutput("scatterPlot", width = "100%", height = "200px")
+                                                tableOutput("analyzedValues")
                                               ),
+                                              
                                               
                                               actionButton("help_window", "HELP")
                                 )
@@ -113,108 +121,6 @@ ui <- navbarPage("Interactive Map",
                           )
                  )
                  
-=======
-## Map subpage ##
-    
-    tabPanel("Map", 
-     div(class="outer", 
-         
-         tags$head(
-           includeCSS("styles.css")
-         ),
-         
-      fluidPage(
-      leafletOutput('myMap', width = "100%", height="100vh"),
-      useShinyjs(),
-      theme = shinytheme("sandstone"),
-      absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                    draggable = TRUE, top = 80, left = "auto", right = 20, bottom = "auto",
-                    width = 330, height = "auto",
-        
-        fluidRow(
-          fileInput("file1", "Choose CSV File", accept = ".csv"),
-          checkboxInput("header", "Header", TRUE)
-        ),
-        
-        radioButtons("disp", "Display",
-                     choices = c("First 100 rows" = "100_rows",
-                                 "First 1000 rows" = "1000_rows",
-                                 "All" = "all"),
-                     selected = "100_rows"),
-        
-        h5(strong("Additional information displayed on the map")),
-        
-        fluidRow( 
-          column(6, selectInput("popup_1", label=NULL,
-                                choices = NULL)), 
-          column(6, selectInput("popup_2",label=NULL,
-                      choices = NULL))
-        ),
-        
-        p(strong("Plot")),
-        
-        fluidRow(
-          column(6, selectInput("x", "X", choices = NULL)),
-          column(6, selectInput("y", "Y", choices = NULL))
-        ),
-        
-        fluidRow(
-          plotOutput("scatterPlot", width = "100%", height = "200px")
-        ),
-        
-        actionButton("help_window", "HELP")
-      )
-    )
-  )),
-  
-
-## Dataset subpage ##
-  
-  tabPanel("Dataset",
-           fluidPage(mainPanel(width = 12,
-                               DT::dataTableOutput("contents")))
-           ),
-
-## Subpage with more details ##
-
-  tabPanel("Details",
-         fluidPage(
-           
-           mainPanel(width=8,
-                     fluidRow(tableOutput('table_summ'),
-                              plotOutput('plot'))),
-             
-           sidebarPanel(width = 4,
-                  
-                  fluidRow(
-                    
-                      h5(strong("Variables:")),
-                      fluidRow(
-                        column(6,selectInput("numeric_var", label=h6("Numeric:"), choices = NULL)),
-                        column(6,selectInput("categorical_var", label=h6("Categorical:"), choices = NULL))),
-                     
-                      h3("Table"),
-                      radioButtons("table_type", label = "Table Type", 
-                                   choices = list("Basic Statistics" = "summary_table", 
-                                                  "Unique Values" = "unique_values_table",
-                                                  "Levels and Frequency" = "lvl_freq"),
-        
-                                   selected = "summary_table"),
-                    
-                      actionButton("create_table", label = "Create Table"),
-                      
-                      h3("Plot"),
-                      radioButtons("plot_types", label = "Plot Type", 
-                                         choices = list("Box Plot" = "boxplot", "Histogram" = "histogram", "Scatter Plot" = "scatter_plot"),
-                                         selected = "histogram"),
-                      
-                      actionButton("create_plot", label = "Create Plot")
-                      
-                    ))
-          )
-        )
-
->>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
 )
 
 
@@ -224,77 +130,132 @@ server <- function(input, output, session) {
   
   data <- reactive({
     req(input$file1)
-    read.csv(input$file1$datapath, header = input$header)
+    data <- read.csv(input$file1$datapath, header = input$header)
+    data <- data[complete.cases(data[, c("LAT", "LON")]), ]
+    colnames(data) <- gsub(";", "", colnames(data))
+    data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
+    data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
+    
+    if (input$disp == "100_rows") {
+      return(data[1:100,])
+    } else if (input$disp == "1000_rows") {
+      return(data[1:1000,])
+    } else {
+      return(data)
+    }
   })
+  
+  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
+  
+  merged_data <- reactive({
+    dataframe_sf <- st_as_sf(data(), coords = c("LON", "LAT"), crs = st_crs(census_sf))
+    merged_data <- left_join(dataframe_sf, data())
+    merged_data <- st_join(merged_data, census_sf)
+    st_sf(merged_data)
+  })
+  
   
   observe({
     req(data())
     updateSelectInput(session, "x", choices = colnames(data()))
     updateSelectInput(session, "y", choices = colnames(data()))
-    updateSelectInput(session, "popup_1", choices = colnames(data()))
-    updateSelectInput(session, "popup_2", choices = colnames(data()))
-    updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
-    updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
+    updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
+    updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
+    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
+    #updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
+    #updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
+  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
   
   output$myMap <- renderLeaflet({
     data <- reactive({ 
-      
       req(input$file1)
       
-      data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
+      data <- read.csv(input$file1$datapath, header = input$header)
+      data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
       
-      if(input$disp == "100_rows") {
+      if (input$disp == "100_rows") {
         return(data[1:100,])
-      }
-      else if(input$disp == "1000_rows"){
+      } else if (input$disp == "1000_rows") {
         return(data[1:1000,])
-      }
-      else {
+      } else {
         return(data)
       }
-      
     })
     
     
-    map <- leaflet(data()) %>% 
+    dataframe_sf <- st_as_sf(data(), coords = c("LON", "LAT"), crs = st_crs(census_sf))
+    merged_data <- left_join(dataframe_sf, data())
+    merged_data <- st_join(merged_data, census_sf)
+    merged_data <- st_sf(merged_data)
+    
+    
+    map <- leaflet() %>% 
       addTiles() %>%  
-      addCircleMarkers(lat =  ~LAT, lng = ~LON, 
+      addPolygons(data = census_sf, fillColor = "lightgreen", fillOpacity = 0.2, color = "gray", weight = 1,
+                  highlightOptions = highlightOptions(
+                    weight = 5,
+                    color = "black",
+                    fillOpacity = 0.7
+                  ),
+                  layerId = ~STUSPS,
+                  labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "auto"),
+                  label = ~STUSPS
+      ) %>%
+      addCircleMarkers(data = merged_data, lat = ~LAT, lng = ~LON, 
                        color = 'darkred',
                        radius = 5, 
-                       popup = paste0(strong(paste0(input$popup_1,": " )), data()[[input$popup_1]],"<br>",
-                                      strong(paste0(input$popup_2,": " )), data()[[input$popup_2]]),
+                       popup = paste0(strong(paste0(input$popup_1, ": ")), merged_data[[input$popup_1]], "<br>",
+                                      strong(paste0(input$popup_2, ": ")), merged_data[[input$popup_2]]),
                        stroke = FALSE, fillOpacity = 0.8
       )
-    map
-  })
-  
-  output$scatterPlot <- renderPlot({
-    req(input$file1,input$x,input$y)
-    data <- data()
-    colnames(data) <- gsub(";", "", colnames(data))
-    
-    ggplot(data, aes(x=data[, input$x], y=data[, input$y])) +
-<<<<<<< HEAD
-      geom_point(na.rm=TRUE) +
-      labs(title=paste(input$x, "vs", input$y),
-           x=input$x, y = input$y) +
-      theme(plot.background = element_rect(fill='transparent', color=NA),
-            text=element_text(face = "bold"))
-    
-=======
-    geom_point(na.rm=TRUE) +
-    labs(title=paste(input$x, "vs", input$y),
-         x=input$x, y = input$y) +
-    theme(plot.background = element_rect(fill='transparent', color=NA),
-          text=element_text(face = "bold"))
 
->>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
-  },bg="transparent")
+    
+    
+    
+    
+    output$analyzedValues <- renderTable({
+      merged_data <- merged_data()
+    
+      
+      
+      analyzed_values <- c(
+        paste0("STATE:", ""),
+        paste0("MEAN: ", mean(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("MEDIAN: ", median(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("VARIANCE: ", var(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("STANDARD DEVIATION: ", sd(merged_data[[input$popup_3]], na.rm = TRUE))
+      )
+      
+      observeEvent(input$myMap_shape_click, {
+        click <- input$myMap_shape_click
+        if (!is.null(click$id)) {
+          sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)]
+          output$analyzedValues <- renderTable({
+            analyzed_values <- c(
+              paste0("STATE:", click$id),
+              paste0("MEAN: ", mean(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("MEDIAN: ", median(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("VARIANCE: ", var(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("STANDARD DEVIATION: ", sd(sub[[input$popup_3]], na.rm = TRUE))
+            )
+          })
+        }
+      })
+      
+      data.frame(Values = analyzed_values, stringsAsFactors = FALSE)
+    })
+    
+    
+    map
+    
+  })
   
   
   
@@ -302,12 +263,17 @@ server <- function(input, output, session) {
     shinyjs::runjs("var helpWindow = window.open('data:text/html,<html><body><h1>Hi, please remember that your dataset must contain these variables: ID, State, CrimeType and NumerOfCrimes.</h1><h2>Have fun :)</h2></body></html>', 'Help', 'dependent=TRUE,resizable=TRUE');helpWindow.document.title = 'Help';")
   })
   
+
   
-<<<<<<< HEAD
+  
+  observeEvent(input$help_window, {
+    shinyjs::runjs("var helpWindow = window.open('data:text/html,<html><body><h1>Hi, please remember that your dataset must contain these variables: ID, State, CrimeType and NumerOfCrimes.</h1><h2>Have fun :)</h2></body></html>', 'Help', 'dependent=TRUE,resizable=TRUE');helpWindow.document.title = 'Help';")
+  })
+  
+
+  
   ## Interactive table showing same rows as on the map ##
   
-=======
->>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
   output$contents <- DT::renderDataTable(
     data <- data() %>% drop_na(last_col()),
     options=list(lengthMenu=list("10","50","100","1000","10000","ALL"),pageLength=50)
@@ -316,11 +282,7 @@ server <- function(input, output, session) {
     
   )
   
-<<<<<<< HEAD
   ## Table with statistics 
-=======
-## Table with statistics 
->>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
   
   observeEvent(input$create_table,{
     output$table_summ <- renderTable({
@@ -329,7 +291,6 @@ server <- function(input, output, session) {
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
       if("summary_table" %in% input$table_type){
-<<<<<<< HEAD
         df_input %>% group_by(categorical_var) %>% 
           summarise(
             !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
@@ -338,16 +299,6 @@ server <- function(input, output, session) {
             !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
           ) %>% 
           rename(!!input$categorical_var := "categorical_var") }
-=======
-      df_input %>% group_by(categorical_var) %>% 
-          summarise(
-          !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
-          !!paste0("Median ", input$numeric_var) := median(numeric_var),
-          !!paste0("Mode ", input$numeric_var) := getmode(numeric_var),
-          !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
-         ) %>% 
-        rename(!!input$categorical_var := "categorical_var") }
->>>>>>> cebd796b75128a8940c1794d636ebbce5abc6131
       else if ("unique_values_table" %in% input$table_type) {
         getUniqueNumValues(data())
       }
