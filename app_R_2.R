@@ -10,6 +10,8 @@ library(tidyr)
 library(dplyr)
 library(tidyverse)
 library(iskanalytics)
+library(Rcpp)
+sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
 
 ui <- navbarPage("Interactive Map",
                  
@@ -96,7 +98,8 @@ ui <- navbarPage("Interactive Map",
                                            radioButtons("table_type", label = "Table Type", 
                                                         choices = list("Basic Statistics" = "summary_table", 
                                                                        "Number of unique values of each column" = "unique_values_table",
-                                                                       "Levels and Frequency of Categorical Values" = "lvl_freq"),
+                                                                       "Levels and Frequency of Categorical Values" = "lvl_freq",
+                                                                       "Number of NULLs" = "na_count"),
                                                         
                                                         selected = "summary_table"),
                                            
@@ -212,19 +215,26 @@ server <- function(input, output, session) {
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
       if("summary_table" %in% input$table_type){
-        df_input %>% group_by(categorical_var) %>% 
+        df_input %>% group_by(categorical_var) %>%
           summarise(
             !!paste0("Mean ", input$numeric_var) := mean(numeric_var),
             !!paste0("Median ", input$numeric_var) := median(numeric_var),
             !!paste0("Mode ", input$numeric_var) := getmode(numeric_var),
-            !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var),
-          ) %>% 
-          rename(!!input$categorical_var := "categorical_var") }
+            !!paste0("Count Unique ", input$numeric_var) := n_distinct(numeric_var)
+          ) %>%
+          rename(!!input$categorical_var := "categorical_var")
+        }
       else if ("unique_values_table" %in% input$table_type) {
         getUniqueNumValues(df_to_cleanNull)
       }
       else if ("lvl_freq" %in% input$table_type) {
         getVarLevels(df_to_cleanNull,input$categorical_var)
+      }
+      else if ("na_count" %in% input$table_type) {
+        rbind.data.frame(
+          countNaValuesRcpp(df_input$numeric_var,input$numeric_var),
+          countNaValuesRcpp(df_input$numeric_var,input$categorical_var)
+          )
       }
       
     })

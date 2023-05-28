@@ -50,10 +50,11 @@ getUniqueNumValues <- function(dataset){
     sort()
 
   #Convert Named Vector to Dataframe
-  df <- data.frame(as.list(uniqueValues))
+  df <- data.frame(numeric_var_names,uniqueValues) %>% rename("Column name" = numeric_var_names)
 
   return(df)
 }
+
 
 #returns levels and frequency of variable in dataset
 getVarLevels <- function(dataset, varName){
