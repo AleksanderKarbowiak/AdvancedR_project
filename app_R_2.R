@@ -81,7 +81,7 @@ ui <- navbarPage("Interactive Map",
                             
                             mainPanel(width=8,
                                       fluidRow(tableOutput('table_summ'),
-                                               plotOutput('plot'), plotOutput('plot2'))),
+                                               plotOutput('plot'))),
                             
                             sidebarPanel(width = 4,
                                          
@@ -104,7 +104,7 @@ ui <- navbarPage("Interactive Map",
                                            
                                            h3("Plot"),
                                            radioButtons("plot_types", label = "Plot Type", 
-                                                        choices = list("Box Plot" = "boxplot", "Histogram" = "histogram", "Scatter Plot" = "scatter_plot"),
+                                                        choices = list("Box Plot" = "boxplot", "Histogram for numeric variable" = "histogram", "Bar Plot for categorical variable"="barplot", "Scatter Plot" = "scatter_plot"),
                                                         selected = "histogram"),
                                            
                                            actionButton("create_plot", label = "Create Plot")
@@ -236,26 +236,21 @@ server <- function(input, output, session) {
       df_to_cleanNull <- data() %>% drop_na(last_col())
       df_input <- data.frame(df_to_cleanNull[[input$numeric_var]],df_to_cleanNull[[input$categorical_var]])
       colnames(df_input) <- c("numeric_var", "categorical_var")
-      
+      df_to_cleanNull <- factorCatVars(df_to_cleanNull)
       if("histogram" %in% input$plot_types){
         hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))
-       }
+      }
+      else if("barplot" %in% input$plot_types){
+        barplot(table(df_to_cleanNull[[input$categorical_var]]), main=paste0("Histogram of ",input$categorical_var), xlab=input$categorical_var, ylab="Frequency")}
+      else if("boxplot" %in% input$plot_types){
+       bp_formula = paste0(input$numeric_var,'~',input$categorical_var)
+       boxplot(as.formula(bp_formula),data=df_to_cleanNull, notch=TRUE, ylab=input$numeric_var, main=paste0("Boxplot for",input$numeric_var," x ",input$categorical_var)) }
+      else if("scatter_plot" %in% input$plot_types){
+        plot()}
       
     })
   })
   
-  observeEvent(input$create_plot,{
-    output$plot2 <- renderPlot({
-      req(input$numeric_var,input$categorical_var)
-      df_to_cleanNull2 <- data() %>% drop_na(last_col())
-      df_input2 <- data.frame(df_to_cleanNull2[[input$numeric_var]],df_to_cleanNull2[[input$categorical_var]])
-      colnames(df_input2) <- c("numeric_var", "categorical_var")
-      
-      if("histogram" %in% input$plot_types){
-        barplot(table(df_to_cleanNull2[[input$categorical_var]]))}
-      
-    })
-  })
   
 }
 
