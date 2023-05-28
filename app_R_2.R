@@ -9,7 +9,6 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
-install.packages("iskanalytics")
 library(iskanalytics)
 library(Rcpp)
 sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
@@ -53,15 +52,16 @@ ui <- navbarPage("Interactive Map",
                                                                       choices = NULL))
                                               ),
                                               
-                                              p(strong("Plot")),
+                                              p(strong("Additional information displayed on the map (state)")),
+                                              
                                               
                                               fluidRow(
-                                                column(6, selectInput("x", "X", choices = NULL)),
-                                                column(6, selectInput("y", "Y", choices = NULL))
+                                                column(6, selectInput("popup_3", label = NULL,
+                                                                      choices = NULL)), 
                                               ),
                                               
                                               fluidRow(
-                                                plotOutput("scatterPlot", width = "100%", height = "200px")
+                                                tableOutput("analyzedValues")
                                               ),
                                               
                                               actionButton("help_window", "HELP")
@@ -126,19 +126,44 @@ server <- function(input, output, session) {
   
   data <- reactive({
     req(input$file1)
-    read.csv(input$file1$datapath, header = input$header)
+    data <- read.csv(input$file1$datapath, header = input$header)
+    data <- data[complete.cases(data[, c("LAT", "LON")]), ]
+    colnames(data) <- gsub(";", "", colnames(data))
+    data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
+    data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
+    
+    if (input$disp == "100_rows") {
+      return(data[1:100,])
+    } else if (input$disp == "1000_rows") {
+      return(data[1:1000,])
+    } else {
+      return(data)
+    }
+  })
+  
+  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
+  
+  merged_data <- reactive({
+    dataframe_sf <- st_as_sf(data(), coords = c("LON", "LAT"), crs = st_crs(census_sf))
+    merged_data <- left_join(dataframe_sf, data())
+    merged_data <- st_join(merged_data, census_sf)
+    st_sf(merged_data)
   })
   
   observe({
     req(data())
     updateSelectInput(session, "x", choices = colnames(data()))
     updateSelectInput(session, "y", choices = colnames(data()))
-    updateSelectInput(session, "popup_1", choices = colnames(data()))
-    updateSelectInput(session, "popup_2", choices = colnames(data()))
+    updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
+    updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
+    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
     updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
     updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
+  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
   
   output$myMap <- renderLeaflet({
     data <- reactive({ 
@@ -146,6 +171,7 @@ server <- function(input, output, session) {
       req(input$file1)
       
       data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
+     # data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
@@ -162,33 +188,67 @@ server <- function(input, output, session) {
       
     })
     
+    dataframe_sf <- st_as_sf(data(), coords = c("LON", "LAT"), crs = st_crs(census_sf))
+    merged_data <- left_join(dataframe_sf, data())
+    merged_data <- st_join(merged_data, census_sf)
+    merged_data <- st_sf(merged_data)
     
-    map <- leaflet(data()) %>% 
+    
+    map <- leaflet() %>% 
       addTiles() %>%  
-      addCircleMarkers(lat =  ~LAT, lng = ~LON, 
+      addPolygons(data = census_sf, fillColor = "lightgreen", fillOpacity = 0.2, color = "gray", weight = 1,
+                  highlightOptions = highlightOptions(
+                    weight = 5,
+                    color = "black",
+                    fillOpacity = 0.7
+                  ),
+                  layerId = ~STUSPS,
+                  labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "auto"),
+                  label = ~STUSPS
+      ) %>%
+      addCircleMarkers(data = merged_data, lat = ~LAT, lng = ~LON, 
                        color = 'darkred',
                        radius = 5, 
-                       popup = paste0(strong(paste0(input$popup_1,": " )), data()[[input$popup_1]],"<br>",
-                                      strong(paste0(input$popup_2,": " )), data()[[input$popup_2]]),
+                       popup = paste0(strong(paste0(input$popup_1, ": ")), merged_data[[input$popup_1]], "<br>",
+                                      strong(paste0(input$popup_2, ": ")), merged_data[[input$popup_2]]),
                        stroke = FALSE, fillOpacity = 0.8
       )
+    
+    output$analyzedValues <- renderTable({
+      merged_data <- merged_data()
+      
+      analyzed_values <- c(
+        paste0("STATE:", ""),
+        paste0("MEAN: ", mean(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("MEDIAN: ", median(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("VARIANCE: ", var(merged_data[[input$popup_3]], na.rm = TRUE)),
+        paste0("STANDARD DEVIATION: ", sd(merged_data[[input$popup_3]], na.rm = TRUE))
+      )
+      
+      observeEvent(input$myMap_shape_click, {
+        click <- input$myMap_shape_click
+        if (!is.null(click$id)) {
+          sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)]
+          output$analyzedValues <- renderTable({
+            analyzed_values <- c(
+              paste0("STATE:", click$id),
+              paste0("MEAN: ", mean(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("MEDIAN: ", median(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("VARIANCE: ", var(sub[[input$popup_3]], na.rm = TRUE)),
+              paste0("STANDARD DEVIATION: ", sd(sub[[input$popup_3]], na.rm = TRUE))
+            )
+          })
+        }
+      })
+      
+      data.frame(Values = analyzed_values, stringsAsFactors = FALSE)
+    })
+    
+    
     map
+      
+    
   })
-  
-  output$scatterPlot <- renderPlot({
-    req(input$file1,input$x,input$y)
-    data <- data()
-    colnames(data) <- gsub(";", "", colnames(data))
-    
-    ggplot(data, aes(x=data[, input$x], y=data[, input$y])) +
-      geom_point(na.rm=TRUE) +
-      labs(title=paste(input$x, "vs", input$y),
-           x=input$x, y = input$y) +
-      theme(plot.background = element_rect(fill='transparent', color=NA),
-            text=element_text(face = "bold"))
-    
-  },bg="transparent")
-  
   
   
   observeEvent(input$help_window, {
