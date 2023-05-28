@@ -107,7 +107,7 @@ ui <- navbarPage("Interactive Map",
                                            
                                            h3("Plot"),
                                            radioButtons("plot_types", label = "Plot Type", 
-                                                        choices = list("Box Plot" = "boxplot", "Histogram for numeric variable" = "histogram", "Bar Plot for categorical variable"="barplot", "Scatter Plot" = "scatter_plot"),
+                                                        choices = list("Box Plot" = "boxplot", "Histogram for numeric variable" = "histogram", "Bar Plot for categorical variable"="barplot", "Dot Plot" = "dot_plot"),
                                                         selected = "histogram"),
                                            
                                            actionButton("create_plot", label = "Create Plot")
@@ -255,8 +255,8 @@ server <- function(input, output, session) {
       else if("boxplot" %in% input$plot_types){
        bp_formula = paste0(input$numeric_var,'~',input$categorical_var)
        boxplot(as.formula(bp_formula),data=df_to_cleanNull, notch=TRUE, ylab=input$numeric_var, main=paste0("Boxplot for",input$numeric_var," x ",input$categorical_var)) }
-      else if("scatter_plot" %in% input$plot_types){
-        plot()}
+      else if("dot_plot" %in% input$plot_types){
+        dotchart(x=df_to_cleanNull[[input$numeric_var]], groups=df_to_cleanNull[[input$categorical_var]], main=paste0(input$numeric_var,' for ',input$categorical_var),xlab=input$numeric_var,ylab=input$categorical_var)}
       
     })
   })
