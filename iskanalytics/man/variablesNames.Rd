@@ -8,13 +8,13 @@ Get variable names.
 Returns list of dataframe variables of given type (character or numeric).
 }
 \usage{
-variablesNames(x)
+variablesNames(dataset, varType)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
-}
+}, \itemP{varType}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~

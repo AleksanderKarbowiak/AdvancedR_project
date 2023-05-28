@@ -8,11 +8,11 @@ Convert char to factor.
 Converts character values from dataset to factors and returns the converted dataset.
 }
 \usage{
-factorCatVars(x)
+factorCatVars(dataset)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
 }
 }

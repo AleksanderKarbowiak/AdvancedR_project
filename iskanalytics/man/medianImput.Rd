@@ -8,13 +8,13 @@ Median imputation.
 Returns dataset with median imputed missing values for given numeric variable.
 }
 \usage{
-medianImput(x)
+medianImput(dataset, varName)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
-}
+}, \item{varName}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~

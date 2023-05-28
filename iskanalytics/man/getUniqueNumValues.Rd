@@ -8,11 +8,11 @@ Get number of variable levels.
 Returns the number of numeric variables unqiue values from dataset.
 }
 \usage{
-getUniqueNumValues(x)
+getUniqueNumValues(dataset)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
 }
 }

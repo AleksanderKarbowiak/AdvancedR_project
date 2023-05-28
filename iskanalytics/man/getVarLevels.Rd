@@ -8,13 +8,13 @@ Returns levels and frequency.
 Returns levels and frequency of variable in dataset.
 }
 \usage{
-getVarLevels(x)
+getVarLevels(dataset, varName)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
-}
+},\item{varName}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
