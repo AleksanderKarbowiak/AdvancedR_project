@@ -8,11 +8,11 @@ Number of missing values.
 Returns number of missing values per column.
 }
 \usage{
-countMissingValues(x)
+countMissingValues(dataset)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
 }
 }

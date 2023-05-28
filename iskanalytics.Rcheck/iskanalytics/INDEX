@@ -1,0 +1,8 @@
+countMissingValues      Number of missing values.
+factorCatVars           Convert char to factor.
+getUniqueNumValues      Get number of variable levels.
+getVarLevels            Returns levels and frequency.
+getmode                 Get mode.
+medianImput             Median imputation.
+modeImput               Mode imputation.
+variablesNames          Get variable names.

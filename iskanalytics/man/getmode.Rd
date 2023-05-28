@@ -8,11 +8,11 @@ Get mode.
 Calculates mode for given variable.
 }
 \usage{
-getmode(x)
+getmode(v)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{v}{
 %%     ~~Describe \code{x} here~~
 }
 }

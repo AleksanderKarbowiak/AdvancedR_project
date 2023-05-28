@@ -81,7 +81,7 @@ ui <- navbarPage("Interactive Map",
                             
                             mainPanel(width=8,
                                       fluidRow(tableOutput('table_summ'),
-                                               plotOutput('plot'))),
+                                               plotOutput('plot'), plotOutput('plot2'))),
                             
                             sidebarPanel(width = 4,
                                          
@@ -238,7 +238,21 @@ server <- function(input, output, session) {
       colnames(df_input) <- c("numeric_var", "categorical_var")
       
       if("histogram" %in% input$plot_types){
-        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))}
+        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))
+       }
+      
+    })
+  })
+  
+  observeEvent(input$create_plot,{
+    output$plot2 <- renderPlot({
+      req(input$numeric_var,input$categorical_var)
+      df_to_cleanNull2 <- data() %>% drop_na(last_col())
+      df_input2 <- data.frame(df_to_cleanNull2[[input$numeric_var]],df_to_cleanNull2[[input$categorical_var]])
+      colnames(df_input2) <- c("numeric_var", "categorical_var")
+      
+      if("histogram" %in% input$plot_types){
+        barplot(table(df_to_cleanNull2[[input$categorical_var]]))}
       
     })
   })

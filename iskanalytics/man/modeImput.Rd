@@ -8,13 +8,13 @@ Mode imputation.
 Returns dataset with mode imputed missing values for given character/factor variable.
 }
 \usage{
-modeImput(x)
+modeImput(dataset, varName)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{
+  \item{dataset}{
 %%     ~~Describe \code{x} here~~
-}
+}, \item{varName}
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
