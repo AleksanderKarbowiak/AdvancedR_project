@@ -9,9 +9,54 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
-library(iskanalytics)
+#library(iskanalytics)
 library(Rcpp)
 sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
+library(sf)
+library(leaflet.extras)
+library(htmlwidgets)
+library(R6)
+
+
+get_mode <- function(x) {
+  unique_values <- unique(x)
+  frequencies <- tabulate(match(x, unique_values))
+  mode <- unique_values[which.max(frequencies)]
+  return(mode)
+}
+
+StateObject <- R6::R6Class(
+  "StateObject",
+  public = list(
+    state = NULL,
+    variable = NULL,
+    data = NULL,
+    initialize = function(state, variable, data) {
+      self$state <- state
+      self$variable <- variable
+      self$data <- data
+    },
+    calculateMean = function() {
+      mean_value <- round(mean(self$data[[self$variable]], na.rm = TRUE),2)
+      paste0("Mean ", self$variable, ": ", mean_value)
+    },
+    calculateMedian = function() {
+      median_value <- round(median(self$data[[self$variable]], na.rm = TRUE),2)
+      paste0("Median ", self$variable, ": ", median_value)
+    },
+    calculateVariance = function() {
+      var_value <- round(var(self$data[[self$variable]], na.rm = TRUE), 2)
+      paste0("Variance ", self$variable, ": ", var_value)
+    },
+    calculateMode = function() {
+      mode_value <- round(get_mode(self$data[[self$variable]]),2)
+      paste0("Mode ", self$variable, ": ", mode_value)
+    }
+  )
+)
+
+
+
 
 ui <- navbarPage("Interactive Map",
                  
@@ -120,7 +165,6 @@ ui <- navbarPage("Interactive Map",
 )
 
 
-
 server <- function(input, output, session) {
   
   
@@ -141,7 +185,7 @@ server <- function(input, output, session) {
     }
   })
   
-  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- st_read("census\\cb_2018_us_state_5m.shp")
   census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
   
   merged_data <- reactive({
@@ -157,21 +201,20 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
     updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
-    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
-    updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
-    updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
+    #updateSelectInput(session, "popup_3", choices = variablesNames(merged_data(),'num'))
+    #updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
+    #updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
-  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
-  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
+  
   
   output$myMap <- renderLeaflet({
     data <- reactive({ 
       
       req(input$file1)
       
-      data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
-     # data <- data[complete.cases(data[, c("LAT", "LON")]), ]
+      data<-read.csv(input$file1$datapath, header =  input$header) #%>% drop_na(last_col())
+      data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
@@ -214,39 +257,32 @@ server <- function(input, output, session) {
                        stroke = FALSE, fillOpacity = 0.8
       )
     
+
+    
     output$analyzedValues <- renderTable({
-      merged_data <- merged_data()
+      req(input$myMap_shape_click)
+      click <- input$myMap_shape_click
+      if (!is.null(click$id)) {
+        sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)]
+        
+        stateObj <- StateObject$new(click$id, input$popup_3, sub)
+        
+        analyzed_values <- c(
+          paste0("STATE:", click$id),
+          stateObj$calculateMean(),
+          stateObj$calculateMedian(),
+          stateObj$calculateVariance(),
+          stateObj$calculateMode()
+        )
+      } else {
+        analyzed_values <- rep("", 5)
+      }
       
-      analyzed_values <- c(
-        paste0("STATE:", ""),
-        paste0("MEAN: ", mean(merged_data[[input$popup_3]], na.rm = TRUE)),
-        paste0("MEDIAN: ", median(merged_data[[input$popup_3]], na.rm = TRUE)),
-        paste0("VARIANCE: ", var(merged_data[[input$popup_3]], na.rm = TRUE)),
-        paste0("STANDARD DEVIATION: ", sd(merged_data[[input$popup_3]], na.rm = TRUE))
-      )
-      
-      observeEvent(input$myMap_shape_click, {
-        click <- input$myMap_shape_click
-        if (!is.null(click$id)) {
-          sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)]
-          output$analyzedValues <- renderTable({
-            analyzed_values <- c(
-              paste0("STATE:", click$id),
-              paste0("MEAN: ", mean(sub[[input$popup_3]], na.rm = TRUE)),
-              paste0("MEDIAN: ", median(sub[[input$popup_3]], na.rm = TRUE)),
-              paste0("VARIANCE: ", var(sub[[input$popup_3]], na.rm = TRUE)),
-              paste0("STANDARD DEVIATION: ", sd(sub[[input$popup_3]], na.rm = TRUE))
-            )
-          })
-        }
-      })
-      
-      data.frame(Values = analyzed_values, stringsAsFactors = FALSE)
+      data.frame(Value = analyzed_values)
     })
     
-    
     map
-      
+    
     
   })
   
@@ -308,9 +344,9 @@ server <- function(input, output, session) {
       df_input <- data.frame(df_to_cleanNull[[input$numeric_var]],df_to_cleanNull[[input$categorical_var]])
       colnames(df_input) <- c("numeric_var", "categorical_var")
       df_to_cleanNull <- factorCatVars(df_to_cleanNull)
+      
       if("histogram" %in% input$plot_types){
-        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))
-      }
+        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))}
       else if("barplot" %in% input$plot_types){
         barplot(table(df_to_cleanNull[[input$categorical_var]]), main=paste0("Histogram of ",input$categorical_var), xlab=input$categorical_var, ylab="Frequency")}
       else if("boxplot" %in% input$plot_types){
