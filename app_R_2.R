@@ -12,6 +12,9 @@ library(tidyverse)
 library(iskanalytics)
 library(Rcpp)
 sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
+library(sf)
+library(leaflet.extras)
+library(htmlwidgets)
 
 ui <- navbarPage("Interactive Map",
                  
@@ -141,7 +144,7 @@ server <- function(input, output, session) {
     }
   })
   
-  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
+  census_sf <- st_read("census\\cb_2018_us_state_5m.shp")
   census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
   
   merged_data <- reactive({
@@ -157,13 +160,11 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
     updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
-    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
+    updateSelectInput(session, "popup_3", choices = variablesNames(merged_data(),'num'))
     updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
     updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
-  census_sf <- st_read("C:\\Users\\dell\\OneDrive\\Pulpit\\AR map\\AdvancedR_project\\census\\cb_2018_us_state_5m.shp")
-  census_sf <- census_sf %>% sf::st_transform('+proj=longlat +datum=WGS84')
   
   output$myMap <- renderLeaflet({
     data <- reactive({ 
@@ -228,7 +229,7 @@ server <- function(input, output, session) {
       observeEvent(input$myMap_shape_click, {
         click <- input$myMap_shape_click
         if (!is.null(click$id)) {
-          sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)]
+          sub <- merged_data()[merged_data()$STUSPS == click$id, c(input$popup_3)] %>% drop_na(last_col())
           output$analyzedValues <- renderTable({
             analyzed_values <- c(
               paste0("STATE:", click$id),
@@ -308,9 +309,9 @@ server <- function(input, output, session) {
       df_input <- data.frame(df_to_cleanNull[[input$numeric_var]],df_to_cleanNull[[input$categorical_var]])
       colnames(df_input) <- c("numeric_var", "categorical_var")
       df_to_cleanNull <- factorCatVars(df_to_cleanNull)
+      
       if("histogram" %in% input$plot_types){
-        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))
-      }
+        hist(df_to_cleanNull[[input$numeric_var]], labels=TRUE, xlab=input$numeric_var, main=paste0("Histogram of ",input$numeric_var))}
       else if("barplot" %in% input$plot_types){
         barplot(table(df_to_cleanNull[[input$categorical_var]]), main=paste0("Histogram of ",input$categorical_var), xlab=input$categorical_var, ylab="Frequency")}
       else if("boxplot" %in% input$plot_types){
