@@ -32,9 +32,9 @@ StateObject <- R6::R6Class(
     variable = NULL,
     data = NULL,
     initialize = function(state, variable, data) {
-      stopifnot(!is.null(state), is.character(state))
-      stopifnot(!is.null(variable), is.character(variable))
-      stopifnot(!is.null(data), is.data.frame(data))
+      stopifnot(!is.null(state))
+      stopifnot(!is.null(variable))
+      stopifnot(!is.null(data))
       
       self$state <- state
       self$variable <- variable
@@ -223,8 +223,8 @@ server <- function(input, output, session) {
       
       req(input$file1)
       
-      data<-read.csv(input$file1$datapath, header =  input$header) #%>% drop_na(last_col())
-      data <- data[complete.cases(data[, c("LAT", "LON")]), ]
+      data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
+      #data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
