@@ -9,7 +9,7 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
-library(iskanalytics)
+#library(iskanalytics)
 library(Rcpp)
 sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
 library(sf)
@@ -32,28 +32,38 @@ StateObject <- R6::R6Class(
     variable = NULL,
     data = NULL,
     initialize = function(state, variable, data) {
+      stopifnot(!is.null(state), is.character(state))
+      stopifnot(!is.null(variable), is.character(variable))
+      stopifnot(!is.null(data), is.data.frame(data))
+      
       self$state <- state
       self$variable <- variable
       self$data <- data
     },
     calculateMean = function() {
-      mean_value <- round(mean(self$data[[self$variable]], na.rm = TRUE),2)
+      stopifnot(!is.null(self$data[[self$variable]]))
+      mean_value <- round(mean(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Mean ", self$variable, ": ", mean_value)
     },
     calculateMedian = function() {
-      median_value <- round(median(self$data[[self$variable]], na.rm = TRUE),2)
+      stopifnot(!is.null(self$data[[self$variable]]))
+      median_value <- round(median(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Median ", self$variable, ": ", median_value)
     },
     calculateVariance = function() {
+      stopifnot(!is.null(self$data[[self$variable]]))
       var_value <- round(var(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Variance ", self$variable, ": ", var_value)
     },
     calculateMode = function() {
-      mode_value <- round(get_mode(self$data[[self$variable]]),2)
+      stopifnot(!is.null(self$data[[self$variable]]))
+      mode_value <- round(get_mode(self$data[[self$variable]]), 2)
       paste0("Mode ", self$variable, ": ", mode_value)
     }
   )
 )
+
+
 
 
 
@@ -97,7 +107,7 @@ ui <- navbarPage("Interactive Map",
                                                                       choices = NULL))
                                               ),
                                               
-                                              p(strong("Additional information displayed on the map (state)")),
+                                              p(strong("Analyzed variable")),
                                               
                                               
                                               fluidRow(
@@ -201,9 +211,9 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
     updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
-    updateSelectInput(session, "popup_3", choices = variablesNames(merged_data(),'num'))
-    updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
-    updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
+    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
+    #updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
+    #updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
   })
   
   
@@ -213,8 +223,8 @@ server <- function(input, output, session) {
       
       req(input$file1)
       
-      data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
-      #data <- data[complete.cases(data[, c("LAT", "LON")]), ]
+      data<-read.csv(input$file1$datapath, header =  input$header) #%>% drop_na(last_col())
+      data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
