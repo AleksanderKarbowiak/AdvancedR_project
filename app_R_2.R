@@ -20,7 +20,7 @@ library(sf)
 library(leaflet.extras)
 library(htmlwidgets)
 library(R6)
-
+library(shinyalert)
 
 get_mode <- function(x) {
   unique_values <- unique(x)
@@ -302,7 +302,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$help_window, {
-    shinyjs::runjs("var helpWindow = window.open('data:text/html,<html><body><h1>Hi, please remember that your dataset must contain variables LON and LAT.</h1><h2>Have fun :)</h2></body></html>', 'Help', 'dependent=TRUE,resizable=TRUE');helpWindow.document.title = 'Help';")
+    shinyalert("Hello!", "Please remember that your dataset must contain variables longitude (column name: LON) and latitude (column name: LAT).")
   })
   
   
