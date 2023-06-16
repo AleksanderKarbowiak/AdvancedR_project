@@ -9,7 +9,11 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
-#library(iskanalytics)
+library(devtools)
+if (!require("iskanalytics")) devtools::install(pkg = paste0("./", 
+                                                             "iskanalytics"), 
+                                                reload = TRUE)
+library(iskanalytics)
 library(Rcpp)
 sourceCpp("Codes_functions/countNaValuesRcpp.cpp")
 library(sf)
@@ -211,9 +215,9 @@ server <- function(input, output, session) {
     updateSelectInput(session, "y", choices = colnames(data()))
     updateSelectInput(session, "popup_1", choices = colnames(merged_data()))
     updateSelectInput(session, "popup_2", choices = colnames(merged_data()))
-    updateSelectInput(session, "popup_3", choices = colnames(merged_data()))
-    #updateSelectInput(session, "numeric_var", choices = variablesNames(data(),'num'))
-    #updateSelectInput(session, "categorical_var", choices = variablesNames(data(),'char'))
+    updateSelectInput(session, "popup_3", choices = variablesNames(merged_data(),'num'))
+    updateSelectInput(session, "numeric_var", choices = variablesNames(merged_data(),'num'))
+    updateSelectInput(session, "categorical_var", choices = variablesNames(merged_data(),'char'))
   })
   
   
