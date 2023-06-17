@@ -22,12 +22,6 @@ library(htmlwidgets)
 library(R6)
 library(shinyalert)
 
-get_mode <- function(x) {
-  unique_values <- unique(x)
-  frequencies <- tabulate(match(x, unique_values))
-  mode <- unique_values[which.max(frequencies)]
-  return(mode)
-}
 
 StateObject <- R6::R6Class(
   "StateObject",
@@ -45,30 +39,23 @@ StateObject <- R6::R6Class(
       self$data <- data
     },
     calculateMean = function() {
-      stopifnot(!is.null(self$data[[self$variable]]))
       mean_value <- round(mean(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Mean ", self$variable, ": ", mean_value)
     },
     calculateMedian = function() {
-      stopifnot(!is.null(self$data[[self$variable]]))
       median_value <- round(median(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Median ", self$variable, ": ", median_value)
     },
     calculateVariance = function() {
-      stopifnot(!is.null(self$data[[self$variable]]))
       var_value <- round(var(self$data[[self$variable]], na.rm = TRUE), 2)
       paste0("Variance ", self$variable, ": ", var_value)
     },
     calculateMode = function() {
-      stopifnot(!is.null(self$data[[self$variable]]))
-      mode_value <- round(get_mode(self$data[[self$variable]]), 2)
+      mode_value <- round(getmode(self$data[[self$variable]]), 2)
       paste0("Mode ", self$variable, ": ", mode_value)
     }
   )
 )
-
-
-
 
 
 
@@ -228,7 +215,6 @@ server <- function(input, output, session) {
       req(input$file1)
       
       data<-read.csv(input$file1$datapath, header =  input$header) %>% drop_na(last_col())
-      #data <- data[complete.cases(data[, c("LAT", "LON")]), ]
       colnames(data) <- gsub(";", "", colnames(data))
       data$LAT <- as.numeric(gsub("[^0-9.-]", "", data$LAT))
       data$LON <- as.numeric(gsub("[^0-9.-]", "", data$LON))
