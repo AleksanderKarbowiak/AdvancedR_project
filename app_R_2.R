@@ -288,7 +288,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$help_window, {
-    shinyalert("Hello!", "Please remember that your dataset must contain variables longitude (column name: LON) and latitude (column name: LAT).")
+    shinyalert("Hello!", "The only allowed file format is csv. Please remember that your dataset must contain variables longitude (column name: LON) and latitude (column name: LAT).")
   })
   
   
